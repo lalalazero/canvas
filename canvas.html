@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>canvas</title>
+    <script src="//code.jquery.com/jquery-1.9.1.min.js"></script>
+    <script src="//at.alicdn.com/t/font_902564_gdq3odmj9hh.js"></script>
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <style type="text/css">
+        .icon {
+            width: 1em; height: 1em;
+            vertical-align: -0.15em;
+            fill: currentColor;
+            overflow: hidden;
+        }
+    </style>
+    <style>
+
+        #canvas {
+            display: block;
+        }
+
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+
+        .icons {
+            margin-left: 10px;
+            position: fixed;
+            top: 0;
+            left: 0;
+        }
+        .icons>svg{
+            padding: 10px;
+            width: 30px;
+            height: 30px;
+            transition: all 0.3s;
+        }
+        .icons>svg.active{
+            transform: scale(1.2);
+        }
+        .colorBar {
+            position: fixed;
+            top: 60px;
+            left: 20px;
+        }
+        .colorBar>div {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            box-shadow: 0 0 3px rgba(0,0,0,0.3);
+            transition: all 0.3s;
+            margin: 20px 0px;
+        }
+        .black {
+            background-color: black;
+        }
+        .red {
+            background-color: red;
+        }
+        .yellow {
+            background-color: yellow;
+        }
+        .green {
+            background-color: green;
+        }
+        .blue {
+            background-color: blue;
+        }
+        .colorBar>div.active {
+            transform: scale(1.3);
+        }
+
+        .sizes {
+            position: fixed;
+            right: 15px;
+            top: 10px;
+        }
+        .sizes {
+            display: flex;
+            align-items: center;
+        }
+        .sizes>div {
+            margin: 0 10px;
+            float: left;
+            border-radius: 50%;
+        }
+        .sizes>div.active {
+            background-color: #b8b8b8;
+        }
+        .small {
+            width: 15px;
+            height: 15px;
+            border: 1px solid black;
+        }
+        .middle {
+            width: 20px;
+            height: 20px;
+            border: 1px solid black;
+        }
+        .large {
+            width: 30px;
+            height: 30px;
+            border: 1px solid black;
+        }
+
+
+    </style>
+</head>
+<body>
+    <div class="icons">
+        <svg id="pen" class="icon active">
+            <use xlink:href="#icon-pen"></use>
+        </svg>
+        <svg id="eraser" class="icon">
+            <use xlink:href="#icon-eraser"></use>
+        </svg>
+        <svg id="clear" class="icon">
+            <use xlink:href="#icon-clear"></use>
+        </svg>
+        <svg id="save" class="icon">
+            <use xlink:href="#icon-down_load"></use>
+        </svg>
+    </div>
+    <div class="sizes">
+        <div class="small active"></div>
+        <div class="middle"></div>
+        <div class="large"></div>
+    </div>
+    <div class="colorBar">
+        <div class="active black"></div>
+        <div class="red"></div>
+        <div class="yellow"></div>
+        <div class="green"></div>
+        <div class="blue"></div>
+    </div>
+    <canvas id='canvas' width=300 height=300></canvas>
+    <script>
+        var canvas = document.querySelector('#canvas');
+        var context = canvas.getContext('2d');
+        var pageWidth = document.documentElement.clientWidth;
+        var pageHeight = document.documentElement.clientHeight;
+
+        var colors = ['black','red','yellow','green','blue'];
+        $('.colorBar').on('click',function (e) {
+            $('.colorBar').children().removeClass('active');
+            $(e.target).addClass('active');
+            context.strokeStyle = colors[$(e.target).index()];
+        })
+
+        // pc 上配置画板的长宽
+        autoConfigCanvas(canvas);
+        var eraserActive = false;
+        listenUserActions(canvas);
+
+        document.querySelector('#pen').onclick =function () {
+            eraserActive = false;
+            document.querySelector('#pen').classList.add('active');
+            document.querySelector('#eraser').classList.remove('active');
+        }
+        document.querySelector('#eraser').onclick = function () {
+            eraserActive = true;
+            document.querySelector('#eraser').classList.add('active');
+            document.querySelector('#pen').classList.remove('active');
+
+        }
+
+        document.querySelector('#clear').onclick = function () {
+            function clearCanvas() {
+                context.clearRect(0,0,document.documentElement.clientWidth,document.documentElement.clientHeight);
+            }
+            // clearCanvas();
+            drawBackgroundWhite();
+        }
+        document.querySelector('#save').onclick = function (ev) {
+            var url = canvas.toDataURL('image/png');
+            // console.log(url);
+            var a = document.createElement('a');
+            document.body.appendChild(a);
+            a.href = url;
+            a.download = 'image';
+            // a.target = '_blank';
+            a.click();
+            document.body.removeChild(a);
+        }
+        var penLineWidth = 3;
+        var lineWidth = [3,6,10];
+        $('.sizes').on('click',function (e) {
+            $(this).children().removeClass('active');
+            $(e.target).addClass('active');
+            penLineWidth = lineWidth[$(e.target).index()];
+        })
+
+
+        function autoConfigCanvas(canvas){
+
+
+            resizeCanvas(canvas);
+            function resizeCanvas(canvas){
+                canvas.width = pageWidth;
+                canvas.height = pageHeight;
+            }
+
+            window.onresize = function(){
+                resizeCanvas(canvas);
+            }
+            drawBackgroundWhite();
+        }
+        function drawBackgroundWhite(){
+            context.beginPath();
+            context.fillStyle = 'white';
+            // context.moveTo(0,0);
+            // context.lineTo(pageWidth,0);
+            // context.lineTo(pageWidth,pageHeight);
+            // context.lineTo(0,pageHeight);
+            // context.fill();
+            context.fillRect(0,0,pageWidth,pageHeight);
+            context.closePath();
+        }
+
+        function listenUserActions(canvas){
+
+            var painting = false;
+            var lastPoint = {x: undefined, y: undefined};
+
+            // 触屏设备
+            if(document.body.ontouchstart !== undefined){
+                // 或者用 'ontouchstart' in document.body 或者 document.documentElement
+                canvas.ontouchstart = function(e){
+                    painting = true;
+                    var x = e.touches[0].clientX;
+                    var y = e.touches[0].clientY;
+                    lastPoint = {x:x,y:y};
+                    // drawCircle(x,y,1);
+                }
+                canvas.ontouchmove = function(e){
+                    var x = e.touches[0].clientX;
+                    var y = e.touches[0].clientY;
+                    if(painting){
+                        if(eraserActive){
+                            // clearRect,会把白色背景去掉
+                            // context.clearRect(x,y,10,10);
+                            // 用白色填充模仿橡皮擦效果
+                            wipeErea(x,y,10,10);
+                        }else{
+                            var newPoint = {x:x,y:y};
+                            // drawCircle(x,y,1);
+                            drawLine(lastPoint.x,lastPoint.y,x,y);
+                            lastPoint = newPoint;
+                        }
+
+                    }
+
+                }
+                canvas.ontouchend = function(e){
+                    painting = false;
+                }
+
+            }else {
+                // 非触屏设备，pc
+                canvas.onmousedown = function(e){
+                    painting = true;
+                    var x = e.clientX;
+                    var y = e.clientY;
+                    lastPoint = {x:x,y:y};
+                    // drawCircle(x,y,1);
+                }
+                canvas.onmousemove = function(e){
+                    var x = e.clientX;
+                    var y = e.clientY;
+                    if(painting){
+                        if(eraserActive){
+                            // clearRect,会把白色背景去掉
+                            // context.clearRect(x,y,10,10);
+                            // 用白色填充模仿橡皮擦效果
+                            wipeErea(x,y,10,10);
+                        }else{
+                            var newPoint = {x:x,y:y};
+                            // drawCircle(x,y,1);
+                            drawLine(lastPoint.x,lastPoint.y,x,y);
+                            lastPoint = newPoint;
+                        }
+
+                    }
+
+                }
+                canvas.onmouseup = function(e){
+                    painting = false;
+                }
+            }
+
+            function drawLine(x1,y1,x2,y2){
+                context.beginPath();
+                context.lineWidth = penLineWidth;
+                context.moveTo(x1,y1);
+                context.lineTo(x2,y2);
+                context.stroke();
+                context.closePath();
+            }
+            
+            function wipeErea(x1,y1,width,height) {
+                console.log('wipeErae');
+                context.beginPath();
+                context.fillStyle = 'white';
+                // context.moveTo(x1, y1);
+                // context.lineTo(x1 + width, y1);
+                // context.lineTo(x1 + width, y1 + height);
+                // context.lineTo(x1, y1 + height);
+                // context.fill();
+                context.fillRect(x1, y1, width,height);
+                context.closePath();
+            }
+
+            function drawCircle(x,y,radius){
+                context.beginPath();
+                context.arc(x,y,radius,0,Math.PI*2);
+                context.fill();
+            }
+        }
+
+
+
+    </script>
+</body>
+</html>
